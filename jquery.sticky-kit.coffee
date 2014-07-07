@@ -6,8 +6,10 @@ $ = @jQuery
 
 win = $ window
 $.fn.stick_in_parent = (opts={}) ->
-  { sticky_class, inner_scrolling, parent: parent_selector, offset_top } = opts
+  # add offset_bottom option
+  { sticky_class, inner_scrolling, parent: parent_selector, offset_top, offset_bottom } = opts
   offset_top ?= 0
+  offset_bottom ?= 0
   parent_selector ?= undefined
   inner_scrolling ?= true
   sticky_class ?= "is_stuck"
@@ -24,7 +26,8 @@ $.fn.stick_in_parent = (opts={}) ->
       fixed = false
       bottomed = false
       spacer = $("<div />")
-      spacer.css('position', elm.css('position'))
+      # this breaks test two.html needed for something else?
+      # spacer.css('position', elm.css('position'))
 
       recalc = ->
         border_top = parseInt parent.css("border-top-width"), 10
@@ -70,6 +73,10 @@ $.fn.stick_in_parent = (opts={}) ->
 
       tick = ->
         scroll = win.scrollTop()
+        win_height = win.height()
+        # add check for over-scroll as in chrome
+        if (scroll + win_height > $('body').height())
+          scroll = $('body').height()-win_height
         if last_pos?
           delta = scroll - last_pos
         last_pos = scroll
@@ -104,11 +111,16 @@ $.fn.stick_in_parent = (opts={}) ->
 
           # updated offset
           if inner_scrolling
-            win_height = win.height()
-            if height > win_height # bigger than viewport
+
+            # defined earlier
+            # win_height = win.height()
+            
+            # account for offset_bottom and offset_top
+            if height + offset_bottom + offset_top > win_height # bigger than viewport
               unless bottomed
                 offset -= delta
-                offset = Math.max win_height - height, offset
+                # add offset_bottom
+                offset = Math.max win_height - height - offset_bottom, offset
                 offset = Math.min offset_top, offset
 
                 if fixed
